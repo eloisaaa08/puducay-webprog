@@ -22,7 +22,7 @@ const HomePage = () => {
             </div>
           </div>
 
-          <div className="rounded-3xl border-2 border-dashed border-zinc-300 bg-zinc-100 p-6">
+          <div className="rounded-3xl border-2 border-zinc-300 overflow-hidden">
             <div className="flex min-h-65 items-center justify-center rounded-[1.25rem] bg-zinc-200 overflow-hidden">
               <img
                 src="https://images.unsplash.com/photo-1555066931-4365d14bab8c"
