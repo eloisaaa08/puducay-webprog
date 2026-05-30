@@ -1,485 +1,713 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+
 import {
-  Alert,
   Box,
   Button,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControlLabel,
-  IconButton,
-  InputAdornment,
-  MenuItem,
-  Paper,
+  Card,
+  CardContent,
   Stack,
+  Typography,
   Switch,
   TextField,
-  Typography,
-  useMediaQuery,
+  MenuItem,
+  Modal,
+  FormControl,
+  InputLabel,
+  Select,
+  Snackbar,
+  Alert,
+  Chip,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear'; // Added for clearing search
+
 import { DataGrid } from '@mui/x-data-grid';
-import usersSeed from '../../assets/users.json?raw';
 
-const roles = ['admin', 'editor', 'viewer'];
-const genders = ['male', 'female', 'other'];
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import AccountCircle from '@mui/icons-material/AccountCircle';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import BlockIcon from '@mui/icons-material/Block';
 
-const blankForm = {
-  firstName: '',
-  lastName: '',
-  age: '',
-  gender: '',
-  contactNumber: '',
-  email: '',
-  role: 'editor',
-  username: '',
-  password: '',
-  address: '',
-  isActive: true,
+import {
+  fetchUsers,
+  createUser,
+  updateUser,
+} from '../../services/UserService';
+
+const modalStyle = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 700,
+  maxHeight: '90vh',
+  overflowY: 'auto',
+  bgcolor: 'background.paper',
+  borderRadius: '24px',
+  boxShadow: 24,
+  p: 4,
 };
-
-const labelize = (value) =>
-  value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : '';
-
-const loadUsers = () => {
-  try {
-    return {
-      users: JSON.parse(usersSeed).map((user, index) => ({
-        id: Number(user.id) || index + 1,
-        firstName: String(user.firstName ?? '').trim(),
-        lastName: String(user.lastName ?? '').trim(),
-        age: String(user.age ?? '').trim(),
-        gender: genders.includes(String(user.gender ?? '').trim().toLowerCase())
-          ? String(user.gender ?? '').trim().toLowerCase()
-          : '',
-        contactNumber: String(user.contactNumber ?? '').trim(),
-        email: String(user.email ?? '').trim().toLowerCase(),
-        role: roles.includes(String(user.role ?? '').trim().toLowerCase())
-          ? String(user.role ?? '').trim().toLowerCase()
-          : 'editor',
-        username: String(user.username ?? '').trim().toLowerCase(),
-        password: String(user.password ?? '').trim(),
-        address: String(user.address ?? '').trim(),
-        isActive: typeof user.isActive === 'boolean' ? user.isActive : true,
-      })),
-      error: '',
-    };
-  } catch {
-    return {
-      users: [],
-      error: 'Unable to read users from src/assets/users.json.',
-    };
-  }
-};
-
-const seed = loadUsers();
 
 const UsersPage = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [users, setUsers] = useState(seed.users);
-  const [modal, setModal] = useState({ open: false, id: null });
-  const [form, setForm] = useState(blankForm);
+  const [open, setOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editUserId, setEditUserId] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [genderFilter, setGenderFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
-  const [filterGender, setFilterGender] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertSeverity, setAlertSeverity] = useState('success');
 
-  // Logic to process the list based on filters
+  const showAlert = (message, severity) => {
+    setAlertMessage(message);
+    setAlertSeverity(severity);
+    setAlertOpen(true);
+  };
+
+  const [newUser, setNewUser] = useState({
+    firstName: '',
+    lastName: '',
+    age: '',
+    gender: '',
+    contactNumber: '',
+    email: '',
+    username: '',
+    password: '',
+    address: '',
+    type: 'Editor',
+    isActive: true,
+  });
+
+  const cardStyle = {
+    borderRadius: '28px',
+    border: '1px solid #e2e8f0',
+    boxShadow: '0 18px 45px rgba(15, 23, 42, 0.08)',
+    backgroundColor: '#ffffff',
+  };
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const { data } = await fetchUsers();
+      setUsers(data.users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
-      // 1. Text Search (Matches First Name, Last Name, Email, or Username)
-      const searchLower = searchQuery.toLowerCase();
-      const matchesSearch = 
-        user.firstName.toLowerCase().includes(searchLower) ||
-        user.lastName.toLowerCase().includes(searchLower) ||
-        user.email.toLowerCase().includes(searchLower) ||
-        user.username.toLowerCase().includes(searchLower);
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
 
-      // 2. Role Filter
-      const matchesRole = filterRole === 'all' || user.role === filterRole;
+      const matchesSearch =
+        fullName.includes(search.toLowerCase()) ||
+        user.email?.toLowerCase().includes(search.toLowerCase()) ||
+        user.username?.toLowerCase().includes(search.toLowerCase()) ||
+        user.contactNumber?.toLowerCase().includes(search.toLowerCase());
 
-      // 3. Gender Filter
-      const matchesGender = filterGender === 'all' || user.gender === filterGender;
+      const matchesType =
+        typeFilter === 'all' || user.type === typeFilter;
 
-      // 4. Status Filter
-      const matchesStatus = filterStatus === 'all' || 
-        (filterStatus === 'active' ? user.isActive : !user.isActive);
+      const matchesGender =
+        genderFilter === 'all' || user.gender === genderFilter;
 
-      return matchesSearch && matchesRole && matchesGender && matchesStatus;
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' && user.isActive) ||
+        (statusFilter === 'disabled' && !user.isActive);
+
+      return matchesSearch && matchesType && matchesGender && matchesStatus;
     });
-  }, [users, searchQuery, filterRole, filterGender, filterStatus]);
+  }, [users, search, typeFilter, genderFilter, statusFilter]);
 
-  // Utility to clear all filters
-  const handleResetFilters = () => {
-    setSearchQuery('');
-    setFilterRole('all');
-    setFilterGender('all');
-    setFilterStatus('all');
+  const handleOpen = () => {
+    setIsEditing(false);
+    setErrors({});
+    setNewUser({
+      firstName: '',
+      lastName: '',
+      age: '',
+      gender: '',
+      contactNumber: '',
+      email: '',
+      username: '',
+      password: '',
+      address: '',
+      type: 'editor',
+      isActive: true,
+    });
+    setOpen(true);
   };
 
-  const resetForm = () => {
-    setForm({ ...blankForm });
+  const handleClose = () => {
+    setOpen(false);
+    setIsEditing(false);
+    setEditUserId(null);
     setErrors({});
   };
 
-  const openModal = (user) => {
-    setModal({ open: true, id: user?.id ?? null });
-    setForm(user ? { ...blankForm, ...user } : { ...blankForm });
-    setErrors({});
-  };
+  const handleEdit = (id) => {
+    const userToEdit = users.find((user) => user._id === id);
 
-  const closeModal = () => {
-    setModal({ open: false, id: null });
-    setShowPassword(false);
-    resetForm();
-  };
-
-  const handleChange = ({ target: { name, value, checked, type } }) => {
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+    if (userToEdit) {
+      setErrors({});
+      setNewUser({ ...userToEdit, password: '' });
+      setEditUserId(id);
+      setIsEditing(true);
+      setOpen(true);
     }
   };
 
-  const validate = () => {
-    const nextErrors = {};
-    const email = form.email.trim().toLowerCase();
-    const username = form.username.trim();
+  const handleSaveUser = async () => {
+    const validationErrors = {};
 
-    [
-      ['firstName', 'First name'],
-      ['lastName', 'Last name'],
-      ['age', 'Age'],
-      ['gender', 'Gender'],
-      ['contactNumber', 'Contact number'],
-      ['email', 'Email'],
-      ['role', 'Role'],
-      ['username', 'Username'],
-      ['password', 'Password'],
-      ['address', 'Address'],
-    ].forEach(([key, label]) => {
-      if (!String(form[key]).trim()) {
-        nextErrors[key] = `${label} is required.`;
+    const passwordRegex =
+      /^(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,}$/;
+
+    if (!isEditing || newUser.password) {
+      if (!passwordRegex.test(newUser.password)) {
+        validationErrors.password =
+          'Password must be at least 8 characters and contain a special symbol.';
       }
-    });
-
-    if (!nextErrors.password && form.password.length < 8) {
-      nextErrors.password = 'Password must be at least 8 characters.';
     }
 
-    if (!nextErrors.contactNumber && !/^\d{11}$/.test(form.contactNumber)) {
-      nextErrors.contactNumber = 'Contact number must be exactly 11 digits.';
+    if (!/^\d{11}$/.test(newUser.contactNumber)) {
+      validationErrors.contactNumber =
+        'Mobile number must be exactly 11 digits.';
     }
 
-    if (!nextErrors.age && isNaN(Number(form.age))) {
-      nextErrors.age = 'Age must be a valid number.';
+    if (Number(newUser.age) < 0) {
+      validationErrors.age = 'Age must not be negative.';
     }
 
-    if (!nextErrors.username && /\s/.test(username)) {
-      nextErrors.username = 'Username must not contain spaces.';
+    if (!newUser.email.includes('@')) {
+      validationErrors.email = 'Email must contain @ symbol.';
     }
 
-    if (!nextErrors.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      nextErrors.email = 'Enter a valid email address.';
-    }
-
-    if (!nextErrors.email && users.some((user) => user.id !== modal.id && user.email === email)) {
-      nextErrors.email = 'Email address already exists.';
-    }
-
-    if (!nextErrors.username && users.some((user) => user.id !== modal.id && user.username === username.toLowerCase())) {
-      nextErrors.username = 'Username already exists.';
-    }
-
-    return nextErrors;
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const nextErrors = validate();
-
-    if (Object.keys(nextErrors).length) {
-      setErrors(nextErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
 
-    const newUser = {
-      ...form,
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      email: form.email.trim().toLowerCase(),
-      username: form.username.trim().toLowerCase(),
-    };
+    try {
+      if (isEditing) {
+        const updatedUser = { ...newUser };
 
-    setUsers((prev) =>
-      modal.id
-        ? prev.map((user) => (user.id === modal.id ? { ...user, ...newUser } : user))
-        : [
-            ...prev,
-            {
-              id: prev.reduce((max, user) => Math.max(max, Number(user.id) || 0), 0) + 1,
-              ...newUser,
-            },
-          ]
-    );
+        if (!updatedUser.password) {
+          delete updatedUser.password;
+        }
 
-    closeModal();
+        await updateUser(editUserId, updatedUser);
+        showAlert('User updated successfully.', 'success');
+      } else {
+        await createUser(newUser);
+        showAlert('User added successfully.', 'success');
+      }
+
+      setErrors({});
+      loadUsers();
+      handleClose();
+    } catch (error) {
+      console.error('Error saving user:', error);
+    }
   };
 
-  const toggleStatus = (id) => {
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === id ? { ...user, isActive: !user.isActive } : user
-      )
-    );
-  };
+  const handleToggleActive = async (id, isActive) => {
+    try {
+      await updateUser(id, { isActive: !isActive });
 
-  const fieldProps = (name, label, extra = {}) => ({
-    name,
-    label,
-    value: form[name],
-    onChange: handleChange,
-    error: Boolean(errors[name]),
-    helperText: errors[name],
-    fullWidth: true,
-    ...extra,
-  });
+      if (isActive) {
+        showAlert('User has been disabled successfully.', 'error');
+      } else {
+        showAlert('User has been enabled successfully.', 'success');
+      }
+
+      loadUsers();
+    } catch (error) {
+      console.error('Error toggling user status:', error);
+    }
+  };
 
   const columns = [
-    { field: 'id', headerName: 'ID', width: 80 },
     {
-      field: 'fullName',
-      headerName: 'Full Name',
+      field: 'name',
+      headerName: 'Name',
       flex: 1,
-      minWidth: 170,
-      valueGetter: (_, row) => `${row.firstName} ${row.lastName}`.trim(),
+      valueGetter: (value, row) =>
+        `${row.firstName || ''} ${row.lastName || ''}`,
     },
-    { field: 'username', headerName: 'Username', minWidth: 150 },
-    { field: 'age', headerName: 'Age', width: 90 },
+    { field: 'age', headerName: 'Age', flex: 1 },
+    { field: 'gender', headerName: 'Gender', flex: 1 },
+    { field: 'email', headerName: 'Email', flex: 1 },
     {
-      field: 'gender',
-      headerName: 'Gender',
-      width: 110,
-      valueGetter: (_, row) => labelize(row.gender),
-    },
-    { field: 'contactNumber', headerName: 'Contact Number', minWidth: 160 },
-    { field: 'email', headerName: 'Email', flex: 1.1, minWidth: 220 },
+  field: 'type',
+  headerName: 'Type',
+  flex: 1,
+  renderCell: (params) => {
+    const type = params.row.type || '';
+
+    return (
+      type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()
+    );
+  },
+},
+    { field: 'contactNumber', headerName: 'Contact', flex: 1 },
+    { field: 'username', headerName: 'Username', flex: 1 },
+    { field: 'address', headerName: 'Address', flex: 1 },
     {
-      field: 'role',
-      headerName: 'Role',
-      width: 120,
-      valueGetter: (_, row) => labelize(row.role),
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
-      width: 120,
-      renderCell: ({ row }) => (
+  field: 'status',
+  headerName: 'Status',
+  width: 90,
+      renderCell: (params) => (
         <Chip
+          label={params.row.isActive ? 'Active' : 'Disabled'}
+          color={params.row.isActive ? 'success' : 'error'}
           size="small"
-          label={row.isActive ? 'Active' : 'Inactive'}
-          color={row.isActive ? 'success' : 'default'}
-          variant={row.isActive ? 'filled' : 'outlined'}
         />
       ),
     },
     {
-      field: 'actions',
-      headerName: 'Actions',
-      minWidth: 220,
-      sortable: false,
-      renderCell: ({ row }) => (
-        <Stack direction="row" spacing={1} sx={{ py: 0.5 }}>
-          <Button size="small" variant="outlined" onClick={() => openModal(row)}>
-            Edit
-          </Button>
-          <Button
-            size="small"
-            variant="contained"
-            color={row.isActive ? 'warning' : 'success'}
-            onClick={() => toggleStatus(row.id)}
-          >
-            {row.isActive ? 'Disable' : 'Activate'}
-          </Button>
-        </Stack>
-      ),
-    },
-  ];
+  field: 'actions',
+  headerName: 'Actions',
+  width: 330,
+  sortable: false,
+
+  renderCell: (params) => (
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="space-between"
+      sx={{
+        width: '100%',
+        height: '100%',
+        pt: 1,
+        px: 1,
+      }}
+    >
+      <Stack direction="row" spacing={1}>
+        <Button
+          size="small"
+          startIcon={<EditIcon />}
+          onClick={() => handleEdit(params.row._id)}
+          sx={{
+            width: 100,
+            height: 38,
+            bgcolor: '#0f172a',
+            color: '#ffffff',
+            fontWeight: 800,
+            borderRadius: '14px',
+            textTransform: 'none',
+            boxShadow:
+              '0 8px 18px rgba(15, 23, 42, 0.18)',
+
+            '&:hover': {
+              bgcolor: '#1e293b',
+            },
+          }}
+        >
+          Edit
+        </Button>
+
+        <Button
+          size="small"
+          startIcon={<DeleteIcon />}
+          onClick={() => handleDelete(params.row._id)}
+          sx={{
+  width: 105,
+  height: 38,
+  bgcolor: '#ffffff',
+  color: '#dc2626',
+  fontWeight: 800,
+  borderRadius: '14px',
+  textTransform: 'none',
+  border: '1.5px solid #fecaca',
+  boxShadow:
+    '0 8px 18px rgba(15, 23, 42, 0.08)',
+
+  '& .MuiSvgIcon-root': {
+    color: '#dc2626',
+  },
+
+  '&:hover': {
+    bgcolor: '#fef2f2',
+    borderColor: '#fca5a5',
+  },
+}}
+        >
+          Delete
+        </Button>
+      </Stack>
+
+      <Switch
+        checked={params.row.isActive}
+        onChange={() =>
+          handleToggleActive(
+            params.row._id,
+            params.row.isActive
+          )
+        }
+        color="success"
+      />
+    </Stack>
+  ),
+},
+];
 
   return (
-    <Box sx={{ width: '100%', minWidth: 0 }}>
-      {/* Page Title & Add Button */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-        <Typography variant="h4" fontWeight="bold">Users</Typography>
-        <Button variant="contained" onClick={() => openModal()} sx={{ borderRadius: 2 }}>
-          + Add User
-        </Button>
-      </Box>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        p: { xs: 2, md: 4 },
+        background:
+          'linear-gradient(180deg, #eef2ff 0%, #f8fafc 40%, #ffffff 100%)',
+      }}
+    >
+      <Stack spacing={4}>
+        <Box
+          sx={{
+            p: { xs: 3, md: 5 },
+            borderRadius: '32px',
+            color: '#fff',
+            background:
+              'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+            boxShadow: '0 24px 60px rgba(15, 23, 42, 0.28)',
+          }}
+        >
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', md: 'center' }}
+            spacing={3}
+          >
+            <Box>
+              <Typography
+                sx={{
+                  letterSpacing: 3,
+                  textTransform: 'uppercase',
+                  fontSize: 12,
+                  opacity: 0.75,
+                  fontWeight: 700,
+                }}
+              >
+                User Management
+              </Typography>
 
-      <Paper sx={{ p: 2, mb: 3, border: '1px solid', borderColor: 'divider' }} elevation={0}>
-        <Stack spacing={2}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
-            {/* Search Field */}
-            <TextField
-              placeholder="Search by name, email, or username..."
-              size="small"
-              fullWidth
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-                endAdornment: searchQuery && (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setSearchQuery('')}>
-                      <ClearIcon fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                )
+              <Typography variant="h3" sx={{ fontWeight: 900 }}>
+                Users
+              </Typography>
+
+              <Typography
+                sx={{
+                  mt: 1.5,
+                  maxWidth: 650,
+                  color: '#cbd5e1',
+                  mr: { xs: 0, md: 40 },
+                }}
+              >
+                Manage user records, account details, roles, and active status.
+              </Typography>
+            </Box>
+
+            <Button
+              variant="contained"
+              startIcon={<AddCircleIcon />}
+              onClick={handleOpen}
+              sx={{
+                bgcolor: '#ffffff',
+                color: '#0f172a',
+                fontWeight: 700,
+                borderRadius: '14px',
+                px: 3,
+                '&:hover': { bgcolor: '#e2e8f0' },
               }}
-            />
+            >
+              Add User
+            </Button>
+          </Stack>
+        </Box>
 
-            <Stack direction="row" spacing={1} sx={{ width: { xs: '100%', md: 'auto' } }}>
+        <Card sx={cardStyle}>
+          <CardContent sx={{ p: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
+              User Records
+            </Typography>
+
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              sx={{ mb: 3 }}
+            >
+              <TextField
+                label="Search users"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                fullWidth
+              />
+
               <TextField
                 select
-                label="Role"
-                size="small"
-                sx={{ minWidth: 110 }}
-                value={filterRole}
-                onChange={(e) => setFilterRole(e.target.value)}
+                label="Type"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                sx={{ minWidth: 160 }}
               >
-                <MenuItem value="all">All Roles</MenuItem>
-                {roles.map((r) => <MenuItem key={r} value={r}>{labelize(r)}</MenuItem>)}
+                <MenuItem value="all">All Types</MenuItem>
+                <MenuItem value="Admin">Admin</MenuItem>
+                <MenuItem value="Editor">Editor</MenuItem>
+                <MenuItem value="Viewer">Viewer</MenuItem>
               </TextField>
 
               <TextField
                 select
                 label="Gender"
-                size="small"
-                sx={{ minWidth: 110 }}
-                value={filterGender}
-                onChange={(e) => setFilterGender(e.target.value)}
+                value={genderFilter}
+                onChange={(e) => setGenderFilter(e.target.value)}
+                sx={{ minWidth: 160 }}
               >
                 <MenuItem value="all">All Genders</MenuItem>
-                {genders.map((g) => <MenuItem key={g} value={g}>{labelize(g)}</MenuItem>)}
+                <MenuItem value="Male">Male</MenuItem>
+                <MenuItem value="Female">Female</MenuItem>
               </TextField>
 
               <TextField
                 select
                 label="Status"
-                size="small"
-                sx={{ minWidth: 110 }}
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                sx={{ minWidth: 160 }}
               >
                 <MenuItem value="all">All Status</MenuItem>
                 <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
+                <MenuItem value="disabled">Disabled</MenuItem>
               </TextField>
             </Stack>
 
-            {(searchQuery || filterRole !== 'all' || filterGender !== 'all' || filterStatus !== 'all') && (
-              <Button size="small" color="inherit" onClick={handleResetFilters} sx={{ textTransform: 'none' }}>
-                Reset Filters
-              </Button>
-            )}
-          </Stack>
-        </Stack>
-      </Paper>
-
-      {seed.error ? <Alert severity="error" sx={{ mb: 2 }}>{seed.error}</Alert> : null}
-
-      <Paper sx={{ p: { xs: 1.5, sm: 2 }, minWidth: 0, overflow: 'hidden' }}>
-        {filteredUsers.length ? (
-          <Box sx={{ height: { xs: 400, sm: 520 }, width: '100%' }}>
-            <DataGrid
-              rows={filteredUsers}
-              columns={columns}
-              disableRowSelectionOnClick
-              pageSizeOptions={[5, 10, 25]}
-              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-            />
-          </Box>
-        ) : (
-          <Box sx={{ py: 10, textAlign: 'center' }}>
-             <Typography color="text.secondary">
-               No users found matching your search criteria.
-             </Typography>
-             <Button onClick={handleResetFilters} sx={{ mt: 1 }}>Clear all filters</Button>
-          </Box>
-        )}
-      </Paper>
-
-      <Dialog open={modal.open} onClose={closeModal} fullWidth fullScreen={isMobile} maxWidth="md">
-        <Box component="form" onSubmit={handleSubmit}>
-          <DialogTitle>{modal.id ? 'Edit User' : 'Add User'}</DialogTitle>
-          <DialogContent dividers>
-            <Stack spacing={2} sx={{ pt: 1 }}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <TextField {...fieldProps('firstName', 'First Name')} />
-                <TextField {...fieldProps('lastName', 'Last Name')} />
-              </Stack>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <TextField {...fieldProps('age', 'Age')} />
-                <TextField {...fieldProps('gender', 'Gender', { select: true })}>
-                  {genders.map((g) => <MenuItem key={g} value={g}>{labelize(g)}</MenuItem>)}
-                </TextField>
-              </Stack>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <TextField {...fieldProps('contactNumber', 'Contact Number (11 digits)')} />
-                <TextField {...fieldProps('email', 'Email Address')} />
-              </Stack>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <TextField {...fieldProps('role', 'Role', { select: true })}>
-                  {roles.map((r) => <MenuItem key={r} value={r}>{labelize(r)}</MenuItem>)}
-                </TextField>
-                <TextField {...fieldProps('username', 'Username (no spaces)')} />
-              </Stack>
-              <TextField
-                {...fieldProps('password', 'Password (min 8 chars)', {
-                  type: showPassword ? 'text' : 'password',
-                  slotProps: {
-                    input: {
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton onClick={() => setShowPassword(!showPassword)}>
-                            {showPassword ? <VisibilityOff /> : <Visibility />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    },
+            <Box sx={{ height: 500, width: '100%' }}>
+              <DataGrid
+                rows={filteredUsers}
+                columns={columns}
+                getRowId={(row) => row._id}
+                loading={loading}
+                pageSizeOptions={[10, 20, 50]}
+                disableRowSelectionOnClick
+                initialState={{
+                  pagination: {
+                    paginationModel: { pageSize: 10 },
                   },
-                })}
+                }}
+                sx={{
+                  border: 0,
+                  '& .MuiDataGrid-columnHeaders': {
+                    backgroundColor: '#f8fafc',
+                    color: '#0f172a',
+                    fontWeight: 800,
+                  },
+                }}
               />
-              <TextField {...fieldProps('address', 'Address', { multiline: true, rows: 3 })} />
-              <FormControlLabel
-                control={<Switch name="isActive" checked={form.isActive} onChange={handleChange} />}
-                label={form.isActive ? 'User status: Active' : 'User status: Inactive'}
-              />
+            </Box>
+          </CardContent>
+        </Card>
+      </Stack>
+
+      <Modal open={open} onClose={handleClose}>
+        <Box sx={modalStyle}>
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 2 }}>
+            {isEditing ? 'Edit User' : 'Add User'}
+          </Typography>
+
+          <Stack direction="column" spacing={3}>
+            <FormControl fullWidth variant="standard">
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', mb: 2 }}>
+                <AccountCircle sx={{ color: 'action.active', mr: 1, my: 0.5 }} />
+                <TextField
+                  fullWidth
+                  label="Enter first name"
+                  variant="standard"
+                  value={newUser.firstName}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, firstName: e.target.value })
+                  }
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', mb: 2 }}>
+                <AccountCircle sx={{ color: 'action.active', mr: 1, my: 0.5 }} />
+                <TextField
+                  fullWidth
+                  label="Enter last name"
+                  variant="standard"
+                  value={newUser.lastName}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, lastName: e.target.value })
+                  }
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', mb: 2 }}>
+                <AccountCircle sx={{ color: 'action.active', mr: 1, my: 0.5 }} />
+                <TextField
+                  fullWidth
+                  label="Enter age"
+                  variant="standard"
+                  type="number"
+                  value={newUser.age}
+                  error={!!errors.age}
+                  helperText={errors.age}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, age: e.target.value })
+                  }
+                />
+              </Box>
+
+              <Stack direction="row" sx={{ alignItems: 'flex-end', mb: 2 }}>
+                <AccountCircle sx={{ color: 'action.active', mr: 1, my: 0.5 }} />
+                <FormControl fullWidth variant="standard">
+                  <InputLabel>Gender</InputLabel>
+                  <Select
+                    IconComponent={ExpandMoreIcon}
+                    value={newUser.gender}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, gender: e.target.value })
+                    }
+                  >
+                    <MenuItem value="Male">Male</MenuItem>
+                    <MenuItem value="Female">Female</MenuItem>
+                  </Select>
+                </FormControl>
+              </Stack>
+
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', mb: 2 }}>
+                <AccountCircle sx={{ color: 'action.active', mr: 1, my: 0.5 }} />
+                <TextField
+                  fullWidth
+                  label="Enter mobile"
+                  variant="standard"
+                  value={newUser.contactNumber}
+                  error={!!errors.contactNumber}
+                  helperText={errors.contactNumber}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, contactNumber: e.target.value })
+                  }
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', mb: 2 }}>
+                <AccountCircle sx={{ color: 'action.active', mr: 1, my: 0.5 }} />
+                <TextField
+                  fullWidth
+                  label="Enter address"
+                  variant="standard"
+                  value={newUser.address}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, address: e.target.value })
+                  }
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', mb: 2 }}>
+                <AccountCircle sx={{ color: 'action.active', mr: 1, my: 0.5 }} />
+                <TextField
+                  fullWidth
+                  label="Enter email"
+                  variant="standard"
+                  value={newUser.email}
+                  error={!!errors.email}
+                  helperText={errors.email}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, email: e.target.value })
+                  }
+                />
+              </Box>
+
+              <Stack direction="row" sx={{ alignItems: 'flex-end', mb: 2 }}>
+                <AccountCircle sx={{ color: 'action.active', mr: 1, my: 0.5 }} />
+                <FormControl fullWidth variant="standard">
+                  <InputLabel>Type</InputLabel>
+                  <Select
+                    value={newUser.type || 'viewer'}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, type: e.target.value })
+                    }
+                  >
+                    <MenuItem value="Admin">Admin</MenuItem>
+                    <MenuItem value="Editor">Editor</MenuItem>
+                    <MenuItem value="Viewer">Viewer</MenuItem>
+                  </Select>
+                </FormControl>
+              </Stack>
+
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', mb: 2 }}>
+                <AccountCircle sx={{ color: 'action.active', mr: 1, my: 0.5 }} />
+                <TextField
+                  fullWidth
+                  label="Enter username"
+                  variant="standard"
+                  value={newUser.username}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, username: e.target.value })
+                  }
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'flex-end', mb: 2 }}>
+                <AccountCircle sx={{ color: 'action.active', mr: 1, my: 0.5 }} />
+                <TextField
+                  fullWidth
+                  label="Enter password"
+                  variant="standard"
+                  type="password"
+                  value={newUser.password}
+                  error={!!errors.password}
+                  helperText={errors.password}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, password: e.target.value })
+                  }
+                />
+              </Box>
+            </FormControl>
+
+            <Stack spacing={2} direction="row">
+              <Button variant="outlined" onClick={handleClose}>
+                Cancel
+              </Button>
+
+              <Button variant="contained" onClick={handleSaveUser}>
+                {isEditing ? 'Save Changes' : 'Add'}
+              </Button>
             </Stack>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, py: 2 }}>
-            <Button onClick={closeModal}>Cancel</Button>
-            <Button type="submit" variant="contained">{modal.id ? 'Update User' : 'Save User'}</Button>
-          </DialogActions>
+          </Stack>
         </Box>
-      </Dialog>
+      </Modal>
+
+      <Snackbar
+        open={alertOpen}
+        autoHideDuration={3000}
+        onClose={() => setAlertOpen(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setAlertOpen(false)}
+          severity={alertSeverity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {alertMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

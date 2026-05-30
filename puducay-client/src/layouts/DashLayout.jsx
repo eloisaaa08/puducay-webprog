@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import {
   Box,
@@ -21,26 +21,50 @@ import SearchIcon from '@mui/icons-material/Search';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import PeopleIcon from '@mui/icons-material/People';
+import ArticleIcon from '@mui/icons-material/Article';
+
+const userType = localStorage.getItem('type')?.toLowerCase();
 
 const dashboardNavItems = [
   {
     label: 'Dashboard',
-    title: 'Dashboard',
+    title: '',
     to: '/dashboard',
     icon: <DashboardIcon />,
   },
-  {
-    label: 'Reports',
-    title: 'Reports',
-    to: '/dashboard/reports',
-    icon: <AssessmentIcon />,
-  },
-  {
-    label: 'Users',
-    title: 'Users',
-    to: '/dashboard/users',
-    icon: <PeopleIcon />,
-  },
+
+  ...(['admin', 'editor'].includes(userType)
+    ? [
+        {
+          label: 'Reports',
+          title: '',
+          to: '/dashboard/reports',
+          icon: <AssessmentIcon />,
+        },
+      ]
+    : []),
+
+  ...(userType === 'admin'
+    ? [
+        {
+          label: 'Users',
+          title: '',
+          to: '/dashboard/users',
+          icon: <PeopleIcon />,
+        },
+      ]
+    : []),
+
+  ...(['admin', 'editor'].includes(userType)
+    ? [
+        {
+          label: 'Articles',
+          title: '',
+          to: '/dashboard/articles',
+          icon: <ArticleIcon />,
+        },
+      ]
+    : []),
 ];
 
 const getPageTitle = (pathname) => {
@@ -58,8 +82,9 @@ const DashLayout = () => {
   const pageTitle = getPageTitle(location.pathname);
 
   const handleLogout = () => {
-    navigate('/');
-  };
+  localStorage.clear();
+  navigate('/auth/signin');
+};
 
   return (
     <Box
@@ -85,7 +110,7 @@ const DashLayout = () => {
           zIndex: 10,
         }}
       >
-        {/* LOGO */}
+        {/* SIDEBAR HEADER */}
         <Box
           sx={{
             px: open ? 3 : 2,
@@ -129,7 +154,7 @@ const DashLayout = () => {
                 sx={{ mb: 1.5 }}
               >
                 <ListItemButton
-                  component={Link}
+                  component={NavLink}
                   to={to}
                   sx={{
                     border: '2px solid #18181b',
@@ -215,76 +240,75 @@ const DashLayout = () => {
         }}
       >
         {/* TOPBAR */}
-<Box
-  sx={{
-    borderBottom: '2px solid #18181b',
-    backgroundColor: '#f4f4f5',
-    px: { xs: 3, md: 4 },
-    py: 2.5,
-    flexShrink: 0,
-  }}
->
-  <Box
-    sx={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 2,
-      flexWrap: 'wrap',
-    }}
-  >
-    {/* TITLE */}
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-      }}
-    >
-      <Typography
-        sx={{
-          fontSize: { xs: '1.5rem', md: '1.9rem' },
-          fontWeight: 600,
-          color: '#18181b',
-          lineHeight: 1,
-        }}
-      >
-        {pageTitle}
-      </Typography>
-    </Box>
+        <Box
+          sx={{
+            borderBottom: '2px solid #18181b',
+            backgroundColor: '#f4f4f5',
+            px: { xs: 3, md: 4 },
+            py: 2.5,
+            flexShrink: 0,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2,
+              flexWrap: 'wrap',
+            }}
+          >
+            {/* LOGO PLACED ON THE TITLE SITE */}
+            <NavLink to="/" className="flex items-center gap-3 group no-underline">
+              <div className="w-9 h-9 transition-transform duration-200 group-hover:scale-105">
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                  <rect x="5" y="5" width="90" height="90" rx="20" fill="#18181b" />
+                  <rect x="20" y="20" width="25" height="25" fill="white" />
+                  <rect x="55" y="20" width="25" height="25" fill="white" />
+                  <rect x="20" y="55" width="60" height="25" fill="white" />
+                </svg>
+              </div>
 
-    {/* SEARCH */}
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        border: '2px solid #18181b',
-        borderRadius: '18px',
-        backgroundColor: '#fafafa',
-        px: 2,
-        py: 0.8,
-        minWidth: { xs: '100%', sm: 300 },
-        maxWidth: 380,
-      }}
-    >
-      <SearchIcon
-        sx={{
-          color: '#52525b',
-          mr: 1,
-        }}
-      />
+              <div className="leading-tight">
+                <p className="text-sm font-bold text-zinc-900 m-0 p-0">Frameflow</p>
+                <p className="text-[10px] uppercase tracking-widest text-zinc-500 m-0 p-0">
+                  UI Workflow
+                </p>
+              </div>
+            </NavLink>
 
-      <InputBase
-        placeholder="Search..."
-        sx={{
-          width: '100%',
-          color: '#18181b',
-          fontWeight: 500,
-        }}
-      />
-    </Box>
-  </Box>
-</Box>
+            {/* SEARCH */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                border: '2px solid #18181b',
+                borderRadius: '18px',
+                backgroundColor: '#fafafa',
+                px: 2,
+                py: 0.8,
+                minWidth: { xs: '100%', sm: 300 },
+                maxWidth: 380,
+              }}
+            >
+              <SearchIcon
+                sx={{
+                  color: '#52525b',
+                  mr: 1,
+                }}
+              />
+
+              <InputBase
+                placeholder="Search..."
+                sx={{
+                  width: '100%',
+                  color: '#18181b',
+                  fontWeight: 500,
+                }}
+              />
+            </Box>
+          </Box>
+        </Box>
 
         {/* PAGE CONTENT */}
         <Box

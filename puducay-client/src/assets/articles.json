@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "name": "focus-in-the-digital-age",
+    "title": "Focus in the Digital Age",
+    "summary": "Why staying focused is harder today—and how to fix it.",
+    "author": "A. Writer",
+    "date": "April 2026",
+    "readTime": "3 min read",
+    "image": "https://picsum.photos/seed/focus/600/400",
+    "content": [
+      "Modern technology is designed to compete for your attention. Every notification, scroll, and click pulls you away from deep work.",
+      "The key to focus is not willpower alone—it is environment design. Turning off notifications and setting clear work periods can dramatically improve concentration.",
+      "Try the 25-minute focus method: work with full attention, then take a short break. Repeat this cycle to build momentum.",
+      "Focus is a skill. The more you train it, the stronger it becomes."
+    ]
+  },
+  {
+    "id": 2,
+    "name": "why-simple-design-wins",
+    "title": "Why Simple Design Wins",
+    "summary": "Clean design is not boring—it is powerful.",
+    "author": "Design Thinker",
+    "date": "April 2026",
+    "readTime": "4 min read",
+    "image": "https://picsum.photos/seed/design/600/400",
+    "content": [
+      "Simple design removes confusion. When users instantly understand what to do, the experience feels effortless.",
+      "Too many features or visual elements can overwhelm users. Instead, focus on clarity, spacing, and hierarchy.",
+      "A good design answers one question: what should the user do next?",
+      "Simplicity is not less work—it is refined work."
+    ]
+  },
+  {
+    "id": 3,
+    "name": "learning-by-building",
+    "title": "Learning by Building",
+    "summary": "The fastest way to learn is to create something real.",
+    "author": "Code Builder",
+    "date": "April 2026",
+    "readTime": "5 min read",
+    "image": "https://picsum.photos/seed/build/600/400",
+    "content": [
+      "Tutorials are helpful, but real understanding comes from building projects.",
+      "When you build, you face real problems—bugs, errors, and decisions—that force you to think deeper.",
+      "Start small: a simple app, a basic website, or a tiny tool. Then improve it step by step.",
+      "Learning sticks when you apply it."
+    ]
+  },
+  {
+    "id": 4,
+    "name": "consistency-over-motivation",
+    "title": "Consistency Over Motivation",
+    "summary": "Motivation fades. Consistency keeps you moving.",
+    "author": "Daily Mind",
+    "date": "April 2026",
+    "readTime": "3 min read",
+    "image": "https://picsum.photos/seed/consistency/600/400",
+    "content": [
+      "Motivation is unreliable. Some days you feel driven, other days you don’t.",
+      "Consistency solves this problem. Showing up every day—even in small ways—builds progress.",
+      "Create routines that are easy to follow. Reduce friction so you don’t rely on mood.",
+      "Success is not one big action—it is repeated small actions."
+    ]
+  },
+  {
+    "id": 5,
+    "name": "thinking-like-a-developer",
+    "title": "Thinking Like a Developer",
+    "summary": "Coding is not just writing code—it is solving problems.",
+    "author": "Logic Mind",
+    "date": "April 2026",
+    "readTime": "6 min read",
+    "image": "https://picsum.photos/seed/developer/600/400",
+    "content": [
+      "Developers break problems into smaller parts. This makes complex tasks manageable.",
+      "Before coding, understand the problem clearly. Ask: what is the input, process, and output?",
+      "Debugging is part of the process. Errors are not failures—they are clues.",
+      "Great developers are great thinkers first."
+    ]
+  }
+]

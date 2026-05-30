@@ -17,6 +17,23 @@ import DashLayout from './layouts/DashLayout';
 import DashboardPage from './pages/DashboardPages/DashboardPage';
 import ReportsPage from './pages/DashboardPages/ReportsPage';
 import UsersPage from './pages/DashboardPages/UsersPage';
+import DashArticleListPage from './pages/DashboardPages/DashArticleListPage';
+
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const token = localStorage.getItem('token');
+  const type = localStorage.getItem('type')?.toLowerCase();
+
+  if (!token) {
+    window.location.href = '/auth/signin';
+    return null;
+  }
+
+  if (!allowedRoles.includes(type)) {
+    return <NotFoundPage />;
+  }
+
+  return children;
+};
 
 const routes = [
   {
@@ -64,15 +81,35 @@ const routes = [
     children: [
       {
         path: "",
-        element: <DashboardPage />,
+        element: (
+          <ProtectedRoute allowedRoles={['admin', 'editor']}>
+            <DashboardPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "reports",
-        element: <ReportsPage />,
+        element: (
+          <ProtectedRoute allowedRoles={['admin', 'editor']}>
+            <ReportsPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "users",
-        element: <UsersPage />,
+        element: (
+          <ProtectedRoute allowedRoles={['admin']}>
+            <UsersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "articles",
+        element: (
+          <ProtectedRoute allowedRoles={['admin', 'editor']}>
+            <DashArticleListPage />
+          </ProtectedRoute>
+        ),
       },
     ],
   },

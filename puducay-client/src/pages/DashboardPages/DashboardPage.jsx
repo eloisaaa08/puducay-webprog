@@ -1,11 +1,18 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+
 import { BarChart } from '@mui/x-charts/BarChart';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { Gauge } from '@mui/x-charts/Gauge';
 
 import { DataGrid } from '@mui/x-data-grid';
+
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -31,135 +38,249 @@ const rows = [
 function DashboardPage() {
   useLocation();
 
+  const validAges = rows.filter((r) => r.age !== null);
+
   const avgAge =
-    rows.filter((r) => r.age !== null).reduce((a, b) => a + b.age, 0) /
-    rows.filter((r) => r.age !== null).length;
+    validAges.reduce((total, row) => total + row.age, 0) / validAges.length;
+
+  const cardStyle = {
+    borderRadius: 4,
+    boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)',
+    border: '1px solid #e2e8f0',
+  };
 
   return (
-    <div className="flex w-full flex-col gap-6">
-
-      {/* HEADER */}
-      <section className="border-y-2 border-zinc-900 bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
-          Dashboard
-        </p>
-        <h1 className="mt-2 text-3xl font-bold text-zinc-900">
-          Analytics Overview
-        </h1>
-      </section>
-
-      {/* SUMMARY */}
-      <section className="border-y-2 border-zinc-900 bg-zinc-50 px-4 py-6 sm:px-6 lg:px-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
-          Overview
-        </p>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
-          <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-            <p className="text-2xl font-bold text-zinc-900">{rows.length}</p>
-            <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
-              Total Users
-            </p>
-          </div>
-
-          <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-            <p className="text-2xl font-bold text-zinc-900">
-              {avgAge.toFixed(1)}
-            </p>
-            <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
-              Average Age
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* GAUGE + CHARTS */}
-      <section className="border-y-2 border-zinc-900 bg-zinc-50 px-4 py-6 sm:px-6 lg:px-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
-          Performance
-        </p>
-
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
-          <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5 flex items-center justify-center">
-            <Gauge width={140} height={140} value={50} valueMin={10} valueMax={60} />
-          </div>
-
-          <div className="rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5 lg:col-span-2">
-            <BarChart
-              series={[
-                { data: [35, 44, 24, 34], label: 'Series 1' },
-                { data: [51, 6, 49, 30], label: 'Series 2' },
-              ]}
-              height={250}
-              xAxis={[{ data: ['Q1', 'Q2', 'Q3', 'Q4'], scaleType: 'band' }]}
-            />
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-5">
-          <PieChart
-            series={[
-              {
-                data: [
-                  { id: 0, value: 10, label: 'A' },
-                  { id: 1, value: 15, label: 'B' },
-                  { id: 2, value: 20, label: 'C' },
-                ],
-              },
-            ]}
-            height={220}
-          />
-        </div>
-      </section>
-
-      {/* TABLE */}
-      <section className="border-y-2 border-zinc-900 bg-zinc-50 px-4 py-6 sm:px-6 lg:px-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
-          Data
-        </p>
-        <h2 className="mt-2 text-2xl font-semibold text-zinc-900">
-          Users Overview
-        </h2>
-
-        <div className="mt-6 h-[420px] rounded-3xl border-2 border-zinc-900 bg-zinc-100 p-2">
-          <DataGrid
-            rows={rows}
-            columns={columns}
-            pageSizeOptions={[5]}
-            checkboxSelection
-            disableRowSelectionOnClick
-          />
-        </div>
-      </section>
-
-      {/* MAP */}
-      <section className="border-y-2 border-zinc-900 bg-zinc-50 px-4 py-6 sm:px-6 lg:px-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-500">
-          Location
-        </p>
-        <h2 className="mt-2 text-2xl font-semibold text-zinc-900">
-          Map View
-        </h2>
-
-        <div className="mt-6 h-[500px] rounded-3xl border-2 border-zinc-900 overflow-hidden">
-          <MapContainer
-            center={[14.604253, 120.994314]}
-            zoom={13}
-            style={{ height: '100%', width: '100%' }}
+    <Box sx={{ bgcolor: '#f8fafc', minHeight: '100vh', p: { xs: 2, md: 4 } }}>
+      <Stack spacing={4}>
+        <Box
+          sx={{
+            p: { xs: 3, md: 5 },
+            borderRadius: "32px",
+            color: "#fff",
+            position: "relative",
+            overflow: "hidden",
+            background:
+              "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)",
+            boxShadow: "0 24px 60px rgba(15, 23, 42, 0.28)",
+          }}
+        >
+      
+          <Typography
+            sx={{
+              letterSpacing: 3,
+              textTransform: 'uppercase',
+              fontSize: 12,
+              opacity: 0.75,
+              fontWeight: 700,
+            }}
           >
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution="&copy; OpenStreetMap contributors"
-            />
-            <Marker position={[14.604253, 120.994314]}>
-              <Popup>
-                National University-Manila
-              </Popup>
-            </Marker>
-          </MapContainer>
-        </div>
-      </section>
-    </div>
+            Executive Dashboard
+          </Typography>
+
+          <Typography variant="h3" sx={{ fontWeight: 800, mt: 1 }}>
+            Analytics Overview
+          </Typography>
+
+          <Typography sx={{ mt: 1.5, maxWidth: 700, color: '#cbd5e1' }}>
+            Analytics overview showing user data, performance charts, and map location.
+          </Typography>
+        </Box>
+
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+          <Card sx={{ ...cardStyle, flex: 1 }}>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary">
+                Total Users
+              </Typography>
+
+              <Typography variant="h3" sx={{ fontWeight: 800, color: '#0f172a', mt: 1 }}>
+                {rows.length}
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary">
+                Current number of listed users in the dashboard.
+              </Typography>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ ...cardStyle, flex: 1 }}>
+            <CardContent>
+              <Typography variant="body2" color="text.secondary">
+                Average Age
+              </Typography>
+
+              <Typography variant="h3" sx={{ fontWeight: 800, color: '#0f172a', mt: 1 }}>
+                {avgAge.toFixed(1)}
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary">
+                Computed average age based on available user data.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Stack>
+
+        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3}>
+          <Card sx={{ ...cardStyle, flex: 1 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                Performance Gauge
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Current performance value.
+              </Typography>
+
+              <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <Gauge width={190} height={190} value={50} valueMin={10} valueMax={60} />
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card sx={{ ...cardStyle, flex: 2 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                Quarterly Performance
+              </Typography>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Comparison of two data series across four quarters.
+              </Typography>
+
+              <BarChart
+                series={[
+                  { data: [35, 44, 24, 34], label: 'Series 1' },
+                  { data: [51, 6, 49, 30], label: 'Series 2' },
+                ]}
+                height={300}
+                xAxis={[
+                  {
+                    data: ['Q1', 'Q2', 'Q3', 'Q4'],
+                    scaleType: 'band',
+                  },
+                ]}
+              />
+            </CardContent>
+          </Card>
+        </Stack>
+
+        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3}>
+          <Card sx={{ ...cardStyle, flex: 1 }}>
+  <CardContent
+    sx={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      textAlign: "center",
+      height: "100%",
+      py: 4,
+    }}
+  >
+    <Typography variant="h6" sx={{ fontWeight: 800 }}>
+      Category Share
+    </Typography>
+
+    <Typography
+      variant="body2"
+      color="text.secondary"
+      sx={{
+        mb: 4,
+        maxWidth: 260,
+      }}
+    >
+      Distribution of dashboard categories.
+    </Typography>
+
+    <PieChart
+      series={[
+        {
+          innerRadius: 0,
+          outerRadius: 90,
+          paddingAngle: 4,
+          cornerRadius: 6,
+          cx: 120,
+          cy: 120,
+          data: [
+            { id: 0, value: 10, label: "A" },
+            { id: 1, value: 15, label: "B" },
+            { id: 2, value: 20, label: "C" },
+          ],
+        },
+      ]}
+      width={240}
+      height={240}
+    />
+
+    <Stack
+      direction="row"
+      spacing={1.5}
+      justifyContent="center"
+      flexWrap="wrap"
+      useFlexGap
+      sx={{ mt: 3 }}
+    >   
+     </Stack>
+  </CardContent>
+</Card>
+
+          <Card sx={{ ...cardStyle, flex: 2 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                Users Overview
+              </Typography>
+
+              <Box sx={{ height: 360 }}>
+                <DataGrid
+                  rows={rows}
+                  columns={columns}
+                  pageSizeOptions={[5]}
+                  checkboxSelection
+                  disableRowSelectionOnClick
+                  sx={{
+                    border: 0,
+                    '& .MuiDataGrid-columnHeaders': {
+                      bgcolor: '#f1f5f9',
+                      color: '#0f172a',
+                      fontWeight: 700,
+                    },
+                  }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </Stack>
+
+        <Card sx={cardStyle}>
+          <CardContent>
+            <Typography variant="h6" sx={{ fontWeight: 800 }}>
+              Map View
+            </Typography>
+
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Location marker for National University-Manila.
+            </Typography>
+
+            <Box sx={{ height: 500, overflow: 'hidden', borderRadius: 3 }}>
+              <MapContainer
+                center={[14.604253, 120.994314]}
+                zoom={13}
+                style={{ height: '100%', width: '100%' }}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution="&copy; OpenStreetMap contributors"
+                />
+
+                <Marker position={[14.604253, 120.994314]}>
+                  <Popup>National University-Manila</Popup>
+                </Marker>
+              </MapContainer>
+            </Box>
+          </CardContent>
+        </Card>
+      </Stack>
+    </Box>
   );
 }
 
