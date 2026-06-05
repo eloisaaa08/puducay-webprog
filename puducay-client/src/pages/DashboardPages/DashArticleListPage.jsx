@@ -595,7 +595,7 @@ const DashArticleListPage = () => {
         autoHideDuration={3000}
         onClose={() => setAlertOpen(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
+        >
         <Alert
           onClose={() => setAlertOpen(false)}
           severity={alertSeverity}
