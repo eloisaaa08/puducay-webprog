@@ -1,47 +1,64 @@
 require("dotenv").config();
-
 const express = require("express");
 const cors = require("cors");
-
+const path = require("path");
+const bodyParser = require("body-parser");
+const jsonParser = bodyParser.json();
 const connectDB = require("./config/db");
 const userRoutes = require("./routes/userRoutes");
 const articleRoutes = require("./routes/articleRoutes");
 
 const app = express();
 
-// Database
+// Database Connection
 connectDB();
 
-// Middleware
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
-
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Test Route
-app.get("/", (req, res) => {
-  res.json({ message: "Backend is running" });
-});
+//Middleware
+app.use(jsonParser);
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors());
+app.use('/api/users', userRoutes);
 
-app.get("/api/test", (req, res) => {
-  res.json({ message: "API working" });
+// vercel options
+const corsOptions = {
+    origin: "*", // Allow all origins
+    credentials: true, // Allow credentials
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204, // For legacy browser support
+};
+
+app.options("", cors(corsOptions)); // Pre-flight request for all routes
+app.use(cors(corsOptions));
+
+// Curb Cores Error by adding a header here
+app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content, Accept, Content-Type, Authorization"
+    );
+    res.setHeader(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    );
+    next();
 });
 
 // Routes
 app.use("/api/users", userRoutes);
+
 app.use("/api/articles", articleRoutes);
 
-// Error Handler
+
+// Error Handling
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({
-    message: err.message || "Server Error",
-  });
+    console.error(err.stack);
+    res.status(500).json({ message: "Server Error" });
 });
 
-// IMPORTANT FOR VERCEL
-module.exports = app;
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
