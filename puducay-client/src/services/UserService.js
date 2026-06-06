@@ -20,3 +20,5 @@ export const deleteUser = (id) => API.delete(`/${id}`);
 
 // Login user
 export const loginUser = (credentials) => API.post('/login', credentials);
+
+console.log("HOST:", constants.HOST);
