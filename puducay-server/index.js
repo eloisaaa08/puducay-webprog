@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
+
 const userRoutes = require("./routes/userRoutes");
 const articleRoutes = require("./routes/articleRoutes");
 
@@ -16,19 +17,16 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
+app.options("*", cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-  res.send("Backend API is running");
+  res.status(200).send("Backend API is running");
 });
 
 app.use("/api/users", userRoutes);
 app.use("/api/articles", articleRoutes);
-
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ message: "Server Error" });
-});
 
 module.exports = app;
