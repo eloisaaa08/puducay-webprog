@@ -23,7 +23,7 @@ import Switch from '@mui/material/Switch';
 
 import { DataGrid } from '@mui/x-data-grid';
 
-const API_URL = 'http://localhost:8000/api/articles';
+const API_URL = 'https://puducay-webprog-server.vercel.app/api/articles';
 
 const emptyForm = {
   name: '',
