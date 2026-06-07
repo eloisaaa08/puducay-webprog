@@ -13,8 +13,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET single article
-router.get('/:name', async (req, res) => {
+// GET single article by name
+router.get('/name/:name', async (req, res) => {
   try {
     const article = await Article.findOne({
       name: req.params.name,
@@ -36,10 +36,9 @@ router.get('/:name', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const article = await Article.create(req.body);
-
     res.status(201).json(article);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 });
 
@@ -49,19 +48,27 @@ router.put('/:id', async (req, res) => {
     const updatedArticle = await Article.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true }
+      { new: true, runValidators: true }
     );
+
+    if (!updatedArticle) {
+      return res.status(404).json({ message: 'Article not found' });
+    }
 
     res.json(updatedArticle);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 });
 
 // DELETE article
 router.delete('/:id', async (req, res) => {
   try {
-    await Article.findByIdAndDelete(req.params.id);
+    const deletedArticle = await Article.findByIdAndDelete(req.params.id);
+
+    if (!deletedArticle) {
+      return res.status(404).json({ message: 'Article not found' });
+    }
 
     res.json({
       message: 'Article deleted successfully',
@@ -76,7 +83,11 @@ router.patch('/:id/status', async (req, res) => {
   try {
     const article = await Article.findById(req.params.id);
 
-    article.isActive = article.isActive === false ? true : false;
+    if (!article) {
+      return res.status(404).json({ message: 'Article not found' });
+    }
+
+    article.isActive = !article.isActive;
 
     await article.save();
 
