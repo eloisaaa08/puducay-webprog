@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Button from '../../components/Button.jsx';
 import ArticleList from '../../components/ArticleList.jsx';
 
-const API_URL = 'https://puducay-webprog-server.vercel.app/api/articles';
+const API_URL = 'https://puducay-webprog-server.vercel.app/api';
 
 const ArticleListPage = () => {
   const [articles, setArticles] = useState([]);

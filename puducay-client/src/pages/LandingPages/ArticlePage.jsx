@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 
 import Button from '../../components/Button.jsx';
 
-const API_URL = 'https://puducay-webprog-server.vercel.app/api/articles';
+const API_URL = 'https://puducay-webprog-server.vercel.app/api';
 
 function ArticlePage() {
   const { name } = useParams();
