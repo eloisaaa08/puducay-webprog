@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 
 import Button from '../../components/Button.jsx';
 
-const API_URL = 'https://puducay-webprog-server.vercel.app/api';
+const API_URL = 'https://puducay-webprog-server.vercel.app/api/articles';
 
 function ArticlePage() {
   const { name } = useParams();
@@ -12,7 +12,7 @@ function ArticlePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_URL}/${name}`)
+    fetch(`${API_URL}/name/${name}`)
       .then((res) => res.json())
       .then((data) => {
         setArticle(data);
